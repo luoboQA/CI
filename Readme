@@ -1,0 +1,92 @@
+SuperSimpleCI
+=============
+**Author:** Malini Das
+
+**Project:** SuperSimpleCI
+
+**Requirements:** Posix, Python3+, Git
+
+This is a simplified version of a distributed continuous integration (CI) system. 
+It assumes you're running against a git repository, and needs git on the PATH.
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Observer  │────▶│  Dispatcher│────▶│    Runner  │
+│  (观察者)    │     │  (调度器)   │     │  (执行器)   │
+└─────────────┘     └─────────────┘     └─────────────┘
+      │                    │                    │
+      ▼                    ▼                    ▼
+  监控Git仓库         管理任务队列           运行测试
+  检测新提交          分配测试任务           返回结果
+
+Files
+=====
+* repo_observer.py -- Checks the repo for changes and notifies the dispatcher
+* dispatcher.py -- Receives test requests and dispatches them against test runners
+* test_runner.py -- Runs the tests and returns the results 
+* helpers.py -- Holds shared code
+* update_repo.sh -- Updates the shared repo and drops a new file with the commit id if there's a change
+* test_runner_script.sh -- Updates the test runner's repository to the given commit id 
+* run_or_fail.sh -- Helper method used in update_repo.sh and test_runner_script.sh
+* tests/ -- Holds some demo tests to run
+
+Running the CI
+==============
+
+1. 先创建测试仓库
+在项目目录外创建一个测试仓库（比如放在 /tmp 或你的工作目录）
+cd /mnt/d/Vs_CodeSources/CC++/CI
+mkdir test_repo
+cd test_repo
+git init
+
+复制测试文件进去
+cp -r ../code/tests ./
+git add tests/
+git commit -m "add tests"
+2. 创建两个克隆供 CI 使用
+回到 CI 项目目录
+cd /mnt/d/Vs_CodeSources/CC++/CI
+
+克隆给 observer 用
+git clone test_repo test_repo_clone_obs
+
+克隆给 test runner 用
+git clone test_repo test_repo_clone_runner
+3. 运行 CI 系统（需要 3 个终端窗口）
+终端 1 - 启动 Dispatcher
+cd /mnt/d/Vs_CodeSources/CC++/CI
+python3 code/dispatcher.py
+
+终端 2 - 启动 Test Runner
+cd /mnt/d/Vs_CodeSources/CC++/CI
+python3 code/test_runner.py --host localhost --port 8901 --dispatcher-server localhost:8888 ./test_repo_clone_runner
+或
+python3 code/test_runner.py ./test_repo_clone_runner
+
+终端 3 - 启动 Repo Observer
+cd /mnt/d/Vs_CodeSources/CC++/CI
+chmod +x *.sh
+python3 code/repo_observer.py --dispatcher-server=localhost:8888 ./test_repo_clone_obs
+
+4. 触发一次测试
+cd /mnt/d/Vs_CodeSources/CC++/CI/test_repo
+touch new_file
+git add new_file
+git commit -m "new file"
+
+# Resource
+https://github.com/aosabook/500lines/tree/master/ci
+
+Error Handling
+==============
+
+If you kill the test_runner.py process, dispatcher.py will figure out that
+the runner is no longer available and will remove it from the pool.
+
+You can also kill the test runner before it runs a test, to simulate a 
+machine going down. If you do so, the dispatcher will realize the 
+runner went down and will wait for a new runner to connect. Upon 
+connection, it will dispatch the unfinished commit to it.
+
+If you kill the dispatcher, the repo observer will figure out it went down
+and will throw an exception. The test runners will also notice, and will
+shut down.
