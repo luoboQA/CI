@@ -8,14 +8,24 @@ SuperSimpleCI
 
 This is a simplified version of a distributed continuous integration (CI) system. 
 It assumes you're running against a git repository, and needs git on the PATH.
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Observer  │────▶│  Dispatcher│────▶│    Runner  │
-│  (观察者)    │     │  (调度器)   │     │  (执行器)   │
-└─────────────┘     └─────────────┘     └─────────────┘
+┌─────────────┐       ┌────────────┐      ┌─────────────┐
+│  Observer   │────▶ │ Dispatcher  │────▶│   Runner    │
+│  (观察者)   │       │  (调度器)   │      │  (执行器)   │
+└─────────────┘      └─────────────┘      └─────────────┘
       │                    │                    │
       ▼                    ▼                    ▼
-  监控Git仓库         管理任务队列           运行测试
-  检测新提交          分配测试任务           返回结果
+  监控Git仓库          管理任务队列            运行测试
+  检测是否有新提交     分配测试任务            执行测试
+                      (发送runtest)              │
+                           ▲                    │
+                           │                    ▼
+                           │              返回测试结果
+                           │              (发送results)
+                           │                    │
+                           └────────────────────┘
+                                        
+                           ▼
+                      保存结果到文件
 
 Files
 =====
