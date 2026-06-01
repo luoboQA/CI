@@ -202,7 +202,7 @@ class DispatcherHandler(socketserver.BaseRequestHandler):
             # 如果结果数据超过缓冲区，继续接收剩余数据
             if length_msg > remaining_buffer:
                 more_data = self.request.recv(length_msg - remaining_buffer).strip()
-                if isinstance(more_data, bytes):
+                if isinstance(more_data, bytes): # 如果接收到的是字节串，解码为字符串
                     more_data = more_data.decode()
                 self.data += more_data
 
