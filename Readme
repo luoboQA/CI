@@ -8,6 +8,28 @@ SuperSimpleCI
 
 This is a simplified version of a distributed continuous integration (CI) system. 
 It assumes you're running against a git repository, and needs git on the PATH.
+
+def checker(server)
+checke_r = threading.Thread(target=checker, args=(server,)) 创建监控线程
+                                 ↑                  ↑
+                       指定这个线程要执行的函数 访问 server 对象中的数据
+checker.start() 启动监控线程
+
+class ThreadingTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+同时继承:
+    - ThreadingMixIn: 让每个请求在新线程中处理（并发）
+    - TCPServer: 提供 TCP 服务器基础功能
+server = ThreadingTCPServer((args.host, int(args.port)), DispatcherHandler)
+#                             ↑                 ↑               ↑
+#                          参数1: 地址      参数2: port      参数3: 处理器类
+ 
+    |---->fun_c.start() 开始启动检查线程checke_r
+__main__
+    |---->server.serve_forever() 开始阻塞监听---->接受连接，创建新线程---->Handler 实例------>自动调用 handler.handle()--->执行业务逻辑（解析命令、处理注册/分发/结果）--->  handle() 返回，自动关闭连接，线程结束
+                                                         |
+                                                         ▼
+                                                server.serve_forever()创建完 Handler 线程后立即返回,继续阻塞，accept() 等待下一个连接
+
 ┌─────────────┐       ┌────────────┐      ┌─────────────┐
 │  Observer   │────▶ │ Dispatcher  │────▶│   Runner    │
 │  (观察者)   │       │  (调度器)   │      │  (执行器)   │
